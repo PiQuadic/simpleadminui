@@ -16,16 +16,16 @@ export interface SensorType {
   dt: Date;
 }
 
-export interface SensorLogType {
-  id: string;
-  name: string;
-  data: { value: string; updatedAt: string; }[];
-}
-
 interface LogType {
   value: string;
   updatedAt: string;
 }
+export interface SensorLogType {
+  id: string;
+  name: string;
+  data: LogType[];
+}
+
 
 export interface TempHumidityState {
   series: {
@@ -93,10 +93,9 @@ const getTemp = async () => {
   return response.data;
 }
 
-
-const getTempLog = async (hours = 12) => {
+const getTempLog = async (hours = 1) => {
   // TODO: fix last value on api maybe add a status label
-  const response = await apiClient.get<SensorType[]>(`/tempsensor/${hours}`);
+  const response = await apiClient.get<SensorLogType>(`/tempsensor/${hours}`);
   return response.data;
 }
 
@@ -107,14 +106,12 @@ const getHumidity = async () => {
   return response.data;
 }
 
-const getHumidityLog = async () => {
+const getHumidityLog = async (hours = 1) => {
   // TODO: fix last value on api maybe add a status label
-  const hours = 12; // default to 24 hours
-  const response = await apiClient.get<SensorType[]>(`/humiditysensor/${hours}`);
+  const response = await apiClient.get<SensorLogType>(`/humiditysensor/${hours}`);
   return response.data;
 }
 
-
-const SensorService = { handleSensorResponse, getTempLog, getTemp, getHumidity, getHumidityLog };
+const SensorService = { getTempLog, getTemp, getHumidity, getHumidityLog, handleSensorResponse };
 
 export default SensorService;

@@ -1,16 +1,23 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { ApexOptions } from 'apexcharts';
-import { useQuery } from 'react-query';
+import { isError, useQuery } from 'react-query';
 import ReactApexChart from 'react-apexcharts';
-import SensorService, { TempHumidityState, handleSensorLogResponse } from '../../services/SensorService';
+import SensorService, { TempHumidityState } from '../../services/SensorService';
 
+const TEMPIDX = 0;
+const HUMIDX = 1;
+
+const formatFixed = (value: string) => parseFloat(value).toFixed(0);
+const formatDate = (value: string, ts: number) => {
+  //return new Date(parseInt(ts))
+  const dt = new Date(ts);
+  return `${dt.getHours().toString().padStart(2, '0')}:${dt.getMinutes().toString().padStart(2, '0')}`
+}
 const options: ApexOptions = {
   legend: {
     show: false,
-    position: 'top',
-    horizontalAlign: 'left',
   },
-  colors: ['#3C50E0', '#80CAEE'],
+  colors: ['#80CAEE', '#3C50E0'],
   chart: {
     fontFamily: 'Satoshi, sans-serif',
     height: 335,
@@ -49,10 +56,7 @@ const options: ApexOptions = {
     width: [2, 2],
     curve: 'straight',
   },
-  // labels: {
-  //   show: false,
-  //   position: "top",
-  // },
+  /*
   grid: {
     xaxis: {
       lines: {
@@ -65,13 +69,14 @@ const options: ApexOptions = {
       },
     },
   },
+  */
   dataLabels: {
     enabled: false,
   },
   markers: {
-    size: 4,
+    size: 3,
     colors: '#fff',
-    strokeColors: ['#3056D3', '#80CAEE'],
+    strokeColors: ['#80CAEE', '#3056D3'],
     strokeWidth: 3,
     strokeOpacity: 0.9,
     strokeDashArray: 0,
@@ -79,19 +84,21 @@ const options: ApexOptions = {
     discrete: [],
     hover: {
       size: undefined,
-      sizeOffset: 5,
+      sizeOffset: 4,
     },
   },
   xaxis: {
     type: 'datetime',
     labels: {
-      rotate: -90,
-      rotateAlways: true
+      show: true,
+      //datetimeUTC: false,
+      //format: 'HH:mm',
+      formatter: formatDate,
+      rotate: -45,
+      rotateAlways: true,
+      hideOverlappingLabels: true,
     },
-    style: {
-      fontSize: '8px',
-    },
-    categories: [],
+    // categories: [],
     axisBorder: {
       show: false,
     },
@@ -99,18 +106,40 @@ const options: ApexOptions = {
       show: false,
     },
   },
-  yaxis: {
-    title: {
-      style: {
-        fontSize: '0px',
+  yaxis: [
+    {
+      seriesName: "ambient temperature",
+      axisTicks: {
+        show: true,
+      },
+      min: 10,
+      //max: 35,
+      title: {
+        text: "Temperature (°C)",
+      },
+      labels: {
+        formatter: (val) => formatFixed(val),
       },
     },
-    min: 20,
-    max: 30,
-  },
+    {
+      seriesName: "ambient humidity",
+      opposite: true,
+      min: 10,
+      //max: 80,
+      title: {
+        text: "Humidity (%)",
+      },
+      labels: {
+        formatter: (val) => formatFixed(val),
+      }
+    }
+  ]
 };
 
 const requestTempLog = async () => {
+  return await SensorService.getHumidityLog(6);
+};
+const requestHumidityLog = async () => {
   return await SensorService.getTempLog(6);
 };
 
@@ -124,35 +153,81 @@ const TempHumidity: React.FC = () => {
   const [humidityDates, setHumidityDates] = useState(["2000-01-01", "2000-01-02"]);
 
   const {
-    data,
-    isLoading,
-    isError,
-    error,
+    data: humidityData,
+    isLoading: isLoadingHumidity,
+    isError: isErrorHumidity,
+    error: errorHumidity,
+    refetch: getHumidityLogData
+  } = useQuery('humidityLog', requestHumidityLog);
+
+  const {
+    data: tempData,
+    isLoading: isLoadingTemp,
+    isError: isErrorTemp,
+    error: errorTemp,
     refetch: getTempLogData
-  } = useQuery('tempLog', requestTempLog, handleSensorLogResponse(setState));
+  } = useQuery('tempLog', requestTempLog);
+
+  const isLoading = isLoadingTemp && isLoadingHumidity;
+  const isError = isErrorTemp && isErrorHumidity;
+  const error = errorTemp || errorHumidity;
 
   useEffect(() => {
-    getTempLogData();
+    // getHumidityLogData();
+    // getTempLogData();
   }, [])
-  useEffect(() => {
-    if (data?.data?.length > 0) {
-      console.log(data.data[data?.data?.length - 1]?.updatedAt);
-    }
-    const tempStart = new Date(data.data[0].updatedAt).toISOString().split('T')[1].split('.')[0];
-    const tempEnd = new Date(data.data[data?.data?.length - 1].updatedAt).toISOString().split('T')[1].split('.')[0];
-    setTempDates([tempStart, tempEnd]);
-    setHumidityDates([tempStart, tempEnd]); // since the will be the same
-    //setHumidityDates([humidityStart, humidityEnd]);
-  }, [data])
 
+  useEffect(() => {
+    if (tempData && tempData?.data?.length > 0) {
+      console.log(tempData);
+      const tempStart = new Date(tempData.data[0].updatedAt)
+        .toISOString()
+        .split('T')[1]
+        .split('.')[0];
+      const tempEnd = new Date(tempData.data[tempData.data.length - 1].updatedAt)
+        .toISOString()
+        .split('T')[1]
+        .split('.')[0];
+      setTempDates([tempStart, tempEnd]);
+      const tempSeries = tempData.data.map((series) => [new Date(series.updatedAt).getTime(), parseFloat(series.value).toFixed(2)]);
+      console.log(tempSeries);
+      setState((prev) => {
+        prev.series[TEMPIDX] = { id: tempData.id, name: tempData.name, data: tempSeries }
+        return prev;
+      });
+    }
+  }, [tempData])
+
+  useEffect(() => {
+    if (humidityData && humidityData?.data?.length > 0) {
+      const humidityStart = new Date(humidityData.data[0].updatedAt)
+        .toISOString()
+        .split('T')[1]
+        .split('.')[0];
+      const humidityEnd = new Date(humidityData.data[humidityData?.data?.length - 1].updatedAt)
+        .toISOString()
+        .split('T')[1]
+        .split('.')[0];
+      setHumidityDates([humidityStart, humidityEnd]);
+      const humiditySeries = humidityData.data.map((series) => [new Date(series.updatedAt).getTime(), parseFloat(series.value).toFixed(2)]);
+      setState((prev) => {
+        if (humidityData?.id) {
+          prev.series[HUMIDX] = { id: humidityData.id, name: humidityData.name, data: humiditySeries }
+          return prev;
+        }
+      });
+    }
+  }, [humidityData])
+
+  // use temperature to calculate labels
   const categories = useMemo(() => {
-    return data?.data?.map((series) => {
+    return tempData?.data?.map((series) => {
       const dateLabelDate = new Date(series.updatedAt);
       const hours = ('0' + dateLabelDate.getHours()).slice(-2);
       const minutes = ('0' + dateLabelDate.getMinutes()).slice(-2);
       return `${hours}:${minutes}`;
     });
-  }, [data]);
+  }, [tempData]);
 
   const handleReset = () => {
     setState((prevState) => ({
@@ -205,7 +280,7 @@ const TempHumidity: React.FC = () => {
           {isError && <div>Error...</div>}
           {!isLoading && !isError && (
             <ReactApexChart
-              options={{ ...options, xaxis: { categories } }}
+              options={{ ...options }}
               series={state.series}
               type="area"
               height={350}
