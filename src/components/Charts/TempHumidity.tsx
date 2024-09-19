@@ -148,6 +148,9 @@ const requestTempLog = async () => {
 const requestHumidityLog = async () => {
   return await SensorService.getTempLog(6);
 };
+const convertDates = (date: Date) => {
+  return date.toLocaleTimeString();
+}
 
 
 const TempHumidity: React.FC = () => {
@@ -185,14 +188,8 @@ const TempHumidity: React.FC = () => {
 
   useEffect(() => {
     if (tempData && tempData?.data?.length > 0) {
-      const tempStart = new Date(tempData.data[0].updatedAt)
-        .toISOString()
-        .split('T')[1]
-        .split('.')[0];
-      const tempEnd = new Date(tempData.data[tempData.data.length - 1].updatedAt)
-        .toISOString()
-        .split('T')[1]
-        .split('.')[0];
+      const tempStart = convertDates(new Date(tempData.data[0].updatedAt));
+      const tempEnd = convertDates(new Date(tempData.data[tempData.data.length - 1].updatedAt));
       setTempDates([tempStart, tempEnd]);
       const tempSeries = tempData.data.map((series) => [new Date(series.updatedAt).getTime(), parseFloat(series.value).toFixed(2)]);
       setState((prev) => {
@@ -206,14 +203,8 @@ const TempHumidity: React.FC = () => {
 
   useEffect(() => {
     if (humidityData && humidityData?.data?.length > 0) {
-      const humidityStart = new Date(humidityData.data[0].updatedAt)
-        .toISOString()
-        .split('T')[1]
-        .split('.')[0];
-      const humidityEnd = new Date(humidityData.data[humidityData?.data?.length - 1].updatedAt)
-        .toISOString()
-        .split('T')[1]
-        .split('.')[0];
+      const humidityStart = convertDates(new Date(humidityData.data[0].updatedAt));
+      const humidityEnd = convertDates(new Date(humidityData.data[humidityData?.data?.length - 1].updatedAt));
       setHumidityDates([humidityStart, humidityEnd]);
       const humiditySeries = humidityData.data.map((series) => [new Date(series.updatedAt).getTime(), parseFloat(series.value).toFixed(2)]);
       setState((prev) => {
