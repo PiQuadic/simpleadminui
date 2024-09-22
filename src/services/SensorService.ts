@@ -1,5 +1,6 @@
 import axios from "axios";
 import { apiUrl } from '../common/constants';
+import { ApexOptions } from 'apexcharts';
 
 const apiClient = axios.create({
   baseURL: `${apiUrl}/sensors`,
@@ -28,6 +29,7 @@ export interface SensorLogType {
 
 
 export interface TempHumidityState {
+  options: ApexOptions;
   series: {
     id: string;
     name: string;
