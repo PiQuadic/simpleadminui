@@ -15,7 +15,7 @@ With TailAdmin, you get access to all the necessary dashboard UI components, ele
 
 ### [🚀 FREE Demo](https://free-react-demo.tailadmin.com/)
 
-### [🚀 PiQuadic Demo](https://free-react-demo.tailadmin.com/)
+### [🚀 PiQuadic Demo](https://piquadic.com/demo-signup)
 
 ### TailAdmin React PRO vs TailAdmin React FREE Comparison 📊
 
