@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { ApexOptions } from 'apexcharts';
 import { isError, useQuery } from 'react-query';
 import ReactApexChart from 'react-apexcharts';
@@ -6,6 +6,8 @@ import SensorService, { TempHumidityState } from '../../services/SensorService';
 
 const TEMPIDX = 0;
 const HUMIDX = 1;
+const chartId = 'temphumdity';
+const offset = 1;
 
 const formatFixed = (val: number, opts: any) => {
   return parseFloat(val.toString()).toFixed(2).toString();;
@@ -24,6 +26,7 @@ colorsConfig[TEMPIDX] = '#80CAEE';
 colorsConfig[HUMIDX] = '#3C50E0';
 const options: ApexOptions = {
   chart: {
+    id: chartId,
     dropShadow: {
       enabled: true,
       color: '#623CEA14',
@@ -32,7 +35,7 @@ const options: ApexOptions = {
       left: 0,
       opacity: 0.1,
     },
-    fontFamily: 'Satoshi, sans-serif',
+    //fontFamily: 'Satoshi, sans-serif',
     height: 335,
     stacked: false,
     type: 'area',
@@ -102,11 +105,14 @@ const options: ApexOptions = {
   xaxis: {
     type: 'datetime',
     labels: {
-      show: true,
       formatter: formatDate,
+      hideOverlappingLabels: true,
       rotate: -45,
       rotateAlways: true,
-      hideOverlappingLabels: true,
+      show: true,
+      style: {
+        fontFamily: "New Courier, Courier, monospace",
+      }
     },
     axisBorder: {
       show: false,
@@ -122,7 +128,12 @@ const options: ApexOptions = {
       },
       labels: {
         formatter: formatFixed,
+        style: {
+          fontFamily: "New Courier, Courier, monospace",
+        },
       },
+      min: 0,
+      max: 50,
       opposite: true,
       seriesName: "ambient temperature",
       title: {
@@ -133,6 +144,8 @@ const options: ApexOptions = {
       labels: {
         formatter: formatFixed,
       },
+      min: 0,
+      max: 100,
       seriesName: "ambient humidity",
       title: {
         text: "Humidity (%)",
@@ -154,11 +167,11 @@ const convertDates = (date: Date) => {
 
 
 const TempHumidity: React.FC = () => {
+  const chartRef = useRef<ReactApexChart>(null);
   const [dataState, setDataState] = useState<TempHumidityState>({
-    series: [],
+    series: [{ id: '', name: '', data: [] }, { id: '', name: '', data: [] }],
     options: options,
   });
-  const [chartOptions, setChartOptions] = useState(options);
 
   const [tempDates, setTempDates] = useState(["2000-01-01", "2000-01-02"]);
   const [humidityDates, setHumidityDates] = useState(["2000-01-01", "2000-01-02"]);
@@ -185,98 +198,80 @@ const TempHumidity: React.FC = () => {
 
   const minTemp = useMemo(() => {
     const min = (tempData?.data && Math.min(...tempData.data.map((x) => formatStringFixed(x.value)))) || 10;
-    return min;
+    return min - offset;
   }, [tempData]);
 
   const maxTemp = useMemo(() => {
     const max = (tempData?.data && Math.max(...tempData.data.map((x) => formatStringFixed(x.value)))) || 35;
-    return max;
+    return max + offset;;
   }, [tempData]);
 
   const minHum = useMemo(() => {
     const min = (humidityData?.data && Math.min(...humidityData.data.map((x) => formatStringFixed(x.value)))) || 10;
-    return min;
+    return min - offset;
   }, [humidityData]);
 
   const maxHum = useMemo(() => {
     const max = (humidityData?.data && Math.max(...humidityData.data.map((x) => formatStringFixed(x.value)))) || 85;
-    return max;
+    return max + offset;
   }, [humidityData]);
 
   useEffect(() => {
     let tempSeries: any;
     let humiditySeries: any;
 
-    if (tempData && tempData?.data?.length > 0) {
+    if ((humidityData && humidityData?.data?.length > 0) && (tempData && tempData?.data?.length > 0)) {
       const tempStart = convertDates(new Date(tempData.data[0].updatedAt));
       const tempEnd = convertDates(new Date(tempData.data[tempData.data.length - 1].updatedAt));
       setTempDates([tempStart, tempEnd]);
       tempSeries = tempData.data.map((series) => [new Date(series.updatedAt).getTime(), parseFloat(series.value).toFixed(2)]);
 
+      const humidityStart = convertDates(new Date(humidityData.data[0].updatedAt));
+      const humidityEnd = convertDates(new Date(humidityData.data[humidityData?.data?.length - 1].updatedAt));
+      setHumidityDates([humidityStart, humidityEnd]);
+      humiditySeries = humidityData.data.map((series) => [new Date(series.updatedAt).getTime(), parseFloat(series.value).toFixed(2)]);
 
       setDataState((prev) => {
         if (prev?.options?.yaxis) {
           prev.options.yaxis[TEMPIDX]["min"] = minTemp;
           prev.options.yaxis[TEMPIDX]["max"] = maxTemp;
-        }
-        if (tempData?.id) {
-          prev.series[TEMPIDX] = { id: tempData.id, name: tempData.name, data: tempSeries }
-        }
-        console.log('TEMP', prev);
-        return prev;
-      });
-    }
-
-    if (humidityData && humidityData?.data?.length > 0) {
-      const humidityStart = convertDates(new Date(humidityData.data[0].updatedAt));
-      const humidityEnd = convertDates(new Date(humidityData.data[humidityData?.data?.length - 1].updatedAt));
-      setHumidityDates([humidityStart, humidityEnd]);
-      humiditySeries = humidityData.data.map((series) => [new Date(series.updatedAt).getTime(), parseFloat(series.value).toFixed(2)]);
-      setDataState((prev) => {
-        if (humidityData?.id) {
-          prev.series[HUMIDX] = { id: humidityData.id, name: humidityData.name, data: humiditySeries }
-        }
-        if (prev?.options?.yaxis) {
           prev.options.yaxis[HUMIDX]["min"] = minHum;
           prev.options.yaxis[HUMIDX]["max"] = maxHum;
         }
-        console.log('HUM', prev);
-        return prev;
+        if (tempData?.id && humidityData?.id) {
+          prev.series[TEMPIDX] = { id: tempData.id, name: tempData.name, data: tempSeries }
+          prev.series[HUMIDX] = { id: humidityData.id, name: humidityData.name, data: humiditySeries }
+        }
+        return { ...prev };
       });
     }
+  }, [humidityData, tempData, maxHum, minHum, maxTemp, minTemp]);
 
-  }, [humidityData])
-
-  const handleReset = () => {
-    console.log("Resetting data");
-    setDataState((prevState) => ({
-      ...prevState,
-    }));
-  };
-  handleReset;
-
-  if (!isLoading && !isError && !tempData?.id) return null;
-  console.log({ dataState });
+  useEffect(() => {
+    if (chartRef.current && dataState.series[TEMPIDX]["data"].length > 0 && dataState.series[HUMIDX]["data"].length > 0) {
+      ApexCharts.exec(chartId, 'updateOptions', { ...dataState.options, series: dataState.series }, false, true);
+    }
+  }, [dataState])
 
   return (
     <div className="col-span-full rounded-sm border border-stroke bg-white px-5 pt-7.5 pb-5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5">
       <div className="flex flex-wrap items-start justify-between gap-3 sm:flex-nowrap">
         <div className="flex w-full flex-wrap gap-3 sm:gap-5">
           <div className="flex min-w-47.5">
-            <span className="mt-1 mr-2 flex h-4 w-full max-w-4 items-center justify-center rounded-full border border-primary">
-              <span className="block h-2.5 w-full max-w-2.5 rounded-full bg-primary"></span>
-            </span>
-            <div className="w-full">
-              <p className="font-semibold text-primary">Temperature</p>
-              <p className="text-xs font-medium">{tempDates.join(" - ")}</p>
-            </div>
-          </div>
-          <div className="flex min-w-47.5">
             <span className="mt-1 mr-2 flex h-4 w-full max-w-4 items-center justify-center rounded-full border border-secondary">
               <span className="block h-2.5 w-full max-w-2.5 rounded-full bg-secondary"></span>
             </span>
             <div className="w-full">
-              <p className="font-semibold text-secondary">Humidity</p>
+              <p className="font-semibold text-secondary">Temperature</p>
+              <p className="text-xs font-medium">{tempDates.join(" - ")}</p>
+            </div>
+          </div>
+          <div className="flex min-w-47.5">
+            <span className="mt-1 mr-2 flex h-4 w-full max-w-4 items-center justify-center rounded-full border border-primary">
+              <span className="block h-2.5 w-full max-w-2.5 rounded-full bg-primary"></span>
+            </span>
+            <div className="w-full">
+              <p className="font-semibold text-primary">Humidity</p>
               <p className="text-xs font-medium">{humidityDates.join(" - ")}</p>
             </div>
           </div>
@@ -306,7 +301,9 @@ const TempHumidity: React.FC = () => {
               series={dataState.series}
               type="area"
               height={350}
-            />)}
+              ref={chartRef}
+            />
+          )}
         </div>
       </div>
     </div>
