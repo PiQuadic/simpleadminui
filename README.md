@@ -7,13 +7,13 @@ dashboard, or admin panel solution for upcoming web projects.
 
 With TailAdmin, you get access to all the necessary dashboard UI components, elements, and pages required to build a feature-rich and complete dashboard or admin panel. Whether you're building dashboard or admin panel for a complex web application or a simple website, TailAdmin is the perfect solution to help you get up and running quickly.
 
-### [✨ Visit Website](https://piquadic.com/)
+### [✨ Visit PiQuadic Website](https://piquadic.com/)
 
-### [✨ Visit Website](https://tailadmin.com/)
+### [✨ Visit Admin UI Website](https://tailadmin.com/)
 
-### [🚀 PRO Demo](https://react-demo.tailadmin.com/)
+### [🚀 PRO Admin UI Demo](https://react-demo.tailadmin.com/)
 
-### [🚀 FREE Demo](https://free-react-demo.tailadmin.com/)
+### [🚀 FREE Admin Ui Demo](https://free-react-demo.tailadmin.com/)
 
 ### [🚀 PiQuadic Demo](https://piquadic.com/demo-signup)
 
