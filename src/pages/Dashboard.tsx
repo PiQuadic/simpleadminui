@@ -1,15 +1,34 @@
 import React, { useState, useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { useQuery } from 'react-query';
 import { CameraIcon } from './UiElements/Icons';
 import Switches from '../components/Switches';
 import TempHumidity from '../components/Charts/TempHumidity';
+import ImageService, { ImageType } from '../services/ImageService';
 
-
+const cameraId = 'camera1';
+const getNewestImage = async () => {
+  return await ImageService.getNewest(cameraId);
+};
 
 const Dashboard: React.FC = () => {
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch
+  } = useQuery('newestImage', getNewestImage);
 
-  const imgUrl = new URL('../../public/images/camera1/12310.jpg', import.meta.url).href
+  //const imgUrl = new URL('../../public/images/camera1/12310.jpg', import.meta.url).href
+  let imgUrl = new URL('../../public/images/camera1/12310.jpg', import.meta.url).href;
 
+  if (!isLoading && !isError) {
+    console.log(data?.uri);
+    const dynamicUrl = `../../public/${data?.uri}`;
+    imgUrl = new URL(dynamicUrl, import.meta.url).href;
+  }
+
+  console.log({ imgUrl });
   return (
     <div>
       <div className="mt-4 grid grid-cols-12 gap-8 md:mt-6 md:gap-6 2xl:mt-7.5 2xl:gap-10">
