@@ -23,12 +23,10 @@ const Dashboard: React.FC = () => {
   let imgUrl = new URL('../../public/images/camera1/12310.jpg', import.meta.url).href;
 
   if (!isLoading && !isError) {
-    console.log(data?.uri);
     const dynamicUrl = `../../public/${data?.uri}`;
     imgUrl = new URL(dynamicUrl, import.meta.url).href;
   }
 
-  console.log({ imgUrl });
   return (
     <div>
       <div className="mt-4 grid grid-cols-12 gap-8 md:mt-6 md:gap-6 2xl:mt-7.5 2xl:gap-10">

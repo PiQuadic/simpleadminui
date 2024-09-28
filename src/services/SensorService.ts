@@ -11,6 +11,7 @@ const apiClient = axios.create({
 
 export interface SensorType {
   id: string;
+  system_id: string;
   name: string;
   value: string;
   icon?: string;
@@ -37,56 +38,12 @@ export interface TempHumidityState {
   }[];
 }
 
-
-export const handleSensorResponse = (setFunction: (val: SensorType | null) => void) => {
-  return {
-    enabled: true,
-    retry: 3,
-    onSuccess: (res: SensorType) => {
-      const data: SensorType = {
-        id: res.id.toString(),
-        name: res.name.toString(),
-        value: parseFloat(res.value).toFixed(2),
-        icon: res.id ? res.id.toString().toUpperCase() : 'DEFAULT',
-        dt: res.dt,
-      }
-      if (data?.value) setFunction(data);
-    },
-    onError: (err: any) => {
-      console.error(err);
-    }
-  }
+export interface SensorResponse {
+  enabled: boolean;
+  retry: number;
+  onSuccess: (res: SensorType) => SensorType | null;
+  onError: (err: any) => void;
 }
-
-export const handleSensorLogResponse = (setFunction: (val: TempHumidityState[] | null) => void) => {
-  return {
-    enabled: true,
-    retry: 3,
-    onSuccess: (res: SensorLogType) => {
-      const name: string = res.name;
-      const data: string[] = res?.data?.map((item: LogType) => {
-        return parseFloat(item.value).toFixed(2);
-      });
-      const series = [{
-        id: res.id,
-        name: name,
-        data: data,
-      }];
-      const seriesData: TempHumidityState = { series };
-      const seriesMap = new Map<string, TempHumidityState>();
-      seriesMap.set(name, seriesData);
-      if (seriesMap?.size > 0) {
-        setFunction((prev: TempHumidityState) => (
-          { ...prev, ...seriesData }
-        ));
-      }
-    },
-    onError: (err: any) => {
-      console.error(err);
-    }
-  }
-};
-
 
 const getTemp = async () => {
   // TODO: fix last value on api maybe add a status label
@@ -114,6 +71,6 @@ const getHumidityLog = async (hours = 1) => {
   return response.data;
 }
 
-const SensorService = { getTempLog, getTemp, getHumidity, getHumidityLog, handleSensorResponse };
+const SensorService = { getTempLog, getTemp, getHumidity, getHumidityLog };
 
 export default SensorService;
