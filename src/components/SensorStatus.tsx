@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from 'react-query';
-import SensorService, { handleSensorResponse, SensorType } from '../services/SensorService';
-import SystemService, { handleSystemResponse, SystemType } from '../services/SystemService';
+import SensorService, { SensorType } from '../services/SensorService';
+import SystemService, { SystemType } from '../services/SystemService';
 import CardDataStatsShort from './CardDataStatsShort';
 import { TempIcon, HumidityIcon, CpuIcon, DiskStorageIcon, DefaultIcon } from '../pages/UiElements/Icons';
 
@@ -21,11 +21,17 @@ const SensorStatus: React.FC = () => {
     return await SensorService.getTemp();
   };
   const {
+    data: dataTemp,
     isLoading: isLoadingTemp,
     isError: isErrorTemp,
     error: errorTemp,
     refetch: getTempData
-  } = useQuery("sensors", requestTemp, handleSensorResponse(setTemp));
+  } = useQuery("sensors", requestTemp);
+
+  useEffect(() => {
+    if (dataTemp?.id) setTemp({ ...dataTemp, icon: dataTemp.id ? dataTemp.id.toString().toUpperCase() : 'DEFAULT' });
+  }, [dataTemp]);
+
 
   // Humididty
   const [humidity, setHumidity] = useState<SensorType | null>(null);
@@ -33,11 +39,16 @@ const SensorStatus: React.FC = () => {
     return await SensorService.getHumidity();
   };
   const {
+    data: dataHumidity,
     isLoading: isLoadingHumidity,
     isError: isErrorHumidity,
     error: errorHumidity,
     refetch: getHumidityData
-  } = useQuery("humidity", requestHumidity, handleSensorResponse(setHumidity));
+  } = useQuery("humidity", requestHumidity);
+
+  useEffect(() => {
+    if (dataHumidity?.id) setHumidity({ ...dataHumidity, icon: dataHumidity?.id ? dataHumidity.id.toString().toUpperCase() : "DEFAULT" });
+  }, [dataHumidity]);
 
 
   // CPU Temp
@@ -46,11 +57,15 @@ const SensorStatus: React.FC = () => {
     return await SystemService.getCpuTemp();
   };
   const {
+    data: dataCpuTemp,
     isLoading: isLoadingCpuTemp,
     isError: isErrorCpuTemp,
     error: errorCpuTemp,
     refetch: getCpuTempData
-  } = useQuery("cpuTemp", requestCpuTemp, handleSystemResponse(setCpuTemp));
+  } = useQuery("cpuTemp", requestCpuTemp);
+  useEffect(() => {
+    if (dataCpuTemp?.id) setCpuTemp({ ...dataCpuTemp, icon: dataCpuTemp?.system_id ? dataCpuTemp.system_id.toString().toUpperCase() : "DEFAULT" });
+  }, [dataCpuTemp]);
 
   // Disk Usage
   const [diskUsage, setDiskUsage] = useState<SensorType | null>(null);
@@ -58,24 +73,40 @@ const SensorStatus: React.FC = () => {
     return await SystemService.getDiskUsage();
   };
   const {
+    data: dataDiskUsage,
     isLoading: isLoadingDiskUsage,
     isError: isErrorDiskUsage,
     error: errorDiskUsage,
     refetch: getDiskUsageData
-  } = useQuery("diskUsage", requestDiskUsage, handleSystemResponse(setDiskUsage));
+  } = useQuery("diskUsage", requestDiskUsage);
+  useEffect(() => {
+    if (dataDiskUsage?.id) setDiskUsage({ ...dataDiskUsage, icon: dataDiskUsage?.system_id ? dataDiskUsage.system_id.toString().toUpperCase() : "DEFAULT" });
+  }, [dataDiskUsage]);
 
+  /*
+  useEffect(() => {
+    setTemp(dataTemp);
+    setHumidity(dataTemp);
+    setCpuTemp(dataCpuTemp);
+    setDiskUsage(dataDiskUsage);
+  }, [dataHumidity, dataTemp, cpuTemp, diskUsage]);
+  */
+
+  /*
   useEffect(() => {
     getCpuTempData();
     getDiskUsageData();
     getHumidityData();
     getTempData();
   }, [])
+  */
 
   const strToFloatToStr = (value: string): string => {
     return parseFloat(value).toFixed(2).toString();
   }
 
   const TempStats = useCallback(() => {
+    console.log({ temp });
     return (
       <CardDataStatsShort
         title={temp?.name || ''}
