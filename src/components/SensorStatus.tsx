@@ -106,7 +106,6 @@ const SensorStatus: React.FC = () => {
   }
 
   const TempStats = useCallback(() => {
-    console.log({ temp });
     return (
       <CardDataStatsShort
         title={temp?.name || ''}

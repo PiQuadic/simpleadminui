@@ -154,19 +154,24 @@ const options: ApexOptions = {
   ]
 };
 
-const requestTempLog = async () => {
-  return await SensorService.getTempLog(6);
-};
-const requestHumidityLog = async () => {
-  return await SensorService.getHumidityLog(6);
-};
-
 const convertDates = (date: Date) => {
   return date.toLocaleTimeString();
 }
 
+const logPeriod = (h: number) => {
+  return h * 60 / 5 * -1;
+}
 
 const TempHumidity: React.FC = () => {
+
+  const [hours, setHours] = useState(6);
+
+  const requestTempLog = async () => {
+    return await SensorService.getTempLog(hours);
+  };
+  const requestHumidityLog = async () => {
+    return await SensorService.getHumidityLog(hours);
+  };
   const chartRef = useRef<ReactApexChart>(null);
   const [dataState, setDataState] = useState<TempHumidityState>({
     series: [{ id: '', name: '', data: [] }, { id: '', name: '', data: [] }],
@@ -239,19 +244,25 @@ const TempHumidity: React.FC = () => {
           prev.options.yaxis[HUMIDX]["max"] = maxHum;
         }
         if (tempData?.id && humidityData?.id) {
-          prev.series[TEMPIDX] = { id: tempData.id, name: tempData.name, data: tempSeries }
-          prev.series[HUMIDX] = { id: humidityData.id, name: humidityData.name, data: humiditySeries }
+          prev.series[TEMPIDX] = { id: tempData.id, name: tempData.name, data: tempSeries.slice(logPeriod(hours)) }
+          prev.series[HUMIDX] = { id: humidityData.id, name: humidityData.name, data: humiditySeries.slice(logPeriod(hours)) }
         }
         return { ...prev };
       });
     }
-  }, [humidityData, tempData, maxHum, minHum, maxTemp, minTemp]);
+  }, [humidityData, tempData, maxHum, minHum, maxTemp, minTemp, hours]);
 
   useEffect(() => {
     if (chartRef.current && dataState.series[TEMPIDX]["data"].length > 0 && dataState.series[HUMIDX]["data"].length > 0) {
       ApexCharts.exec(chartId, 'updateOptions', { ...dataState.options, series: dataState.series }, false, true);
     }
   }, [dataState])
+
+  const handleClick = (hrs: number) => {
+    setHours(() => hrs);
+  }
+  const buttonDefaultClass = 'rounded py-1 px-3 text-xs font-medium text-black hover:bg-white hover:shadow-card dark:text-white dark:hover:bg-boxdark';
+  const activeCard = 'rounded bg-white py-1 px-3 text-xs font-medium text-black shadow-card hover:bg-white hover:shadow-card dark:bg-boxdark dark:text-white dark:hover:bg-boxdark';
 
   return (
     <div className="col-span-full rounded-sm border border-stroke bg-white px-5 pt-7.5 pb-5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5">
@@ -278,15 +289,17 @@ const TempHumidity: React.FC = () => {
         </div>
         <div className="flex w-full max-w-45 justify-end">
           <div className="inline-flex items-center rounded-md bg-whiter p-1.5 dark:bg-meta-4">
-            <button className="rounded bg-white py-1 px-3 text-xs font-medium text-black shadow-card hover:bg-white hover:shadow-card dark:bg-boxdark dark:text-white dark:hover:bg-boxdark">
-              Day
+
+            <button onClick={() => handleClick(2)} className={(hours === 2) ? activeCard : buttonDefaultClass}>
+              2 hrs
             </button>
-            <button className="rounded py-1 px-3 text-xs font-medium text-black hover:bg-white hover:shadow-card dark:text-white dark:hover:bg-boxdark">
-              Week
+            <button onClick={() => handleClick(6)} className={(hours === 6) ? activeCard : buttonDefaultClass}>
+              12 hrs
             </button>
-            <button className="rounded py-1 px-3 text-xs font-medium text-black hover:bg-white hover:shadow-card dark:text-white dark:hover:bg-boxdark">
-              Month
+            <button onClick={() => handleClick(24)} className={(hours === 24) ? activeCard : buttonDefaultClass}>
+              24 hrs
             </button>
+
           </div>
         </div>
       </div>
@@ -306,7 +319,7 @@ const TempHumidity: React.FC = () => {
           )}
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 
